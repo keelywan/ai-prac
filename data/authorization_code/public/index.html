@@ -9,7 +9,7 @@
         #loggedin {
             display: none;
         }
-        
+
         .text-overflow {
             overflow: hidden;
             text-overflow: ellipsis;
@@ -59,6 +59,10 @@
                 </dl>
             </div>
         </div>
+        <div class="test">
+            <input type="text" id="searchParams">
+            <div id="searchResults"></div>
+        </div>
     </script>
 
     <script id="oauth-template" type="text/x-handlebars-template">
@@ -79,7 +83,7 @@
             // console.log(data);
             // https://stackoverflow.com/questions/14964035/how-to-export-javascript-array-info-to-csv-on-client-side
             let output = ""
-            data.forEach(function(row) {
+            data.forEach(function (row) {
                 output += row.join(",") + "\r\n";
             });
             console.log(output)
@@ -177,13 +181,13 @@
             let playlists = Object.entries(playlists_To_Mood)
             playlists.forEach((playlist, pi) => {
                 let playlist_id = playlist[0]
-                setTimeout(function() {
+                setTimeout(function () {
                     $.ajax({
                         url: 'https://api.spotify.com/v1/playlists/' + playlist_id,
                         headers: {
                             'Authorization': 'Bearer ' + access_token
                         },
-                        success: function(response) {
+                        success: function (response) {
                             let numTracks = response["tracks"]["items"].length
                             let playlistName = response["name"].replaceAll(',', ' ')
                             let playlistOwner = response["owner"]["display_name"].replaceAll(',', ' ')
@@ -203,25 +207,25 @@
                                 });
 
                                 // Get Audio Features.
-                                setTimeout(function() {
+                                setTimeout(function () {
                                     $.ajax({
                                         url: 'https://api.spotify.com/v1/audio-features/' + track_id,
                                         headers: {
                                             'Authorization': 'Bearer ' + access_token
                                         },
-                                        success: function(response) {
+                                        success: function (response) {
                                             columns.features.forEach(col => {
                                                 row.push(response[col])
                                             });
 
                                             // Get Audio Analysis
-                                            setTimeout(function() {
+                                            setTimeout(function () {
                                                 $.ajax({
                                                     url: 'https://api.spotify.com/v1/audio-analysis/' + track_id,
                                                     headers: {
                                                         'Authorization': 'Bearer ' + access_token
                                                     },
-                                                    success: function(response) {
+                                                    success: function (response) {
                                                         let analysis = response["track"]
                                                         columns.analysis.forEach(col => {
                                                             row.push(analysis[col])
@@ -247,7 +251,7 @@
         }
         // END: TODO
 
-        (function() {
+        (function () {
 
             /**
              * Obtains parameters from the hash of the URL
@@ -292,26 +296,65 @@
                         headers: {
                             'Authorization': 'Bearer ' + access_token
                         },
-                        success: function(response) {
+                        success: function (response) {
                             userProfilePlaceholder.innerHTML = userProfileTemplate(response);
                             $('#login').hide();
                             $('#loggedin').show();
+                            document.getElementById('searchParams').addEventListener('input', function () {
+                                var ol = document.createElement("ol");
+                                let searchValue = document.getElementById('searchParams').value;
+                                if (searchValue) {
+                                    $.ajax({
+                                        url: 'https://api.spotify.com/v1/search',
+                                        data: {
+                                            'q': searchValue,
+                                            'type': 'track',
+                                            'limit': '10'
+                                        },
+                                        type: 'GET',
+                                        headers: {
+                                            'Authorization': 'Bearer ' + access_token
+                                        },
+                                        success: function (response) {
+                                            response["tracks"]["items"].forEach((song, i) => {
+                                                console.log(song);
+                                                var li = document.createElement("li");
+                                                let allArtists = "";
+                                                song["artists"].forEach((artists, i) => {
+                                                    if (i > 0) allArtists += ", ";
+                                                    allArtists += artists["name"];
+                                                });
+                                                li.appendChild(document.createTextNode(song["name"] + " by " + allArtists + (song["explicit"] ? " E" : "")));
+                                                // li.setAttribute('data-id', song['id']);
+                                                li.addEventListener('click', function () {
+                                                    console.log(song['id']);
+                                                })
+                                                ol.appendChild(li);
+                                            });
+                                            document.getElementById("searchResults").innerHTML = "";
+                                            document.getElementById("searchResults").appendChild(ol);
+                                        }
+                                    });
+                                } else {
+                                    document.getElementById("searchResults").innerHTML = "";
+                                }
+                            });
                         }
                     });
-                    getData(access_token);
+                    // getData(access_token);
                 } else {
                     // render initial screen
                     $('#login').show();
                     $('#loggedin').hide();
                 }
 
-                document.getElementById('obtain-new-token').addEventListener('click', function() {
+                document.getElementById('obtain-new-token').addEventListener('click', function () {
                     $.ajax({
                         url: '/refresh_token',
                         data: {
                             'refresh_token': refresh_token
                         }
-                    }).done(function(data) {
+                    }).done(function (data) {
                         access_token = data.access_token;
                         oauthPlaceholder.innerHTML = oauthTemplate({
                             access_token: access_token,
