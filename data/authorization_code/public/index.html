@@ -327,7 +327,7 @@
                                                 li.appendChild(document.createTextNode(song["name"] + " by " + allArtists + (song["explicit"] ? " E" : "")));
                                                 // li.setAttribute('data-id', song['id']);
                                                 li.addEventListener('click', function () {
-                                                    console.log(song['id']);
+                                                    getSongAudioFeatures(song['id']);
                                                 })
                                                 ol.appendChild(li);
                                             });
@@ -346,6 +346,22 @@
                     // render initial screen
                     $('#login').show();
                     $('#loggedin').hide();
+                }
+
+                function getSongAudioFeatures(id) {
+                    $.ajax({
+                        url: 'https://api.spotify.com/v1/audio-features',
+                        data: {
+                            'ids': id,
+                        },
+                        type: 'GET',
+                        headers: {
+                            'Authorization': 'Bearer ' + access_token
+                        },
+                        success: function (response) {
+                            console.log(response['audio_features'][0]);
+                        }
+                    });
                 }
 
                 document.getElementById('obtain-new-token').addEventListener('click', function () {
