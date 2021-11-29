@@ -2,6 +2,8 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn import svm
+from sklearn.model_selection import cross_val_score
 from sklearn import metrics
 from joblib import dump, load
 
@@ -14,6 +16,8 @@ best_accuracy = 0
 best_type = ""
 best_variables = []
 best_n = -1
+best_c = -1
+best_gamma = ""
 best_weight = ""
 best_algorithm = ""
 best_criterion = ""
@@ -32,7 +36,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
 
 for test_size in [0.2, 0.25, 0.3, 0.35, 0.4]:
   X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size)
-  # Random Forest Classifier
+  # # Random Forest Classifier
   for class_weight in [None, "balanced", "balanced_subsample"]:
     print("RFC " + str(class_weight) + " ================================")
     for split in range(1, 5):
@@ -88,6 +92,32 @@ for test_size in [0.2, 0.25, 0.3, 0.35, 0.4]:
           best_class_weight = None
           best_clf = clf
         print("KNN n=" + str(n) + " / Accuracy:", accuracy)
+  print("------------")
+  
+  # SVM Classifier
+  for gamma in ["scale", "auto"]:
+    for c in range(0, 10):
+      for kernel in ["linear", "rbf"]:
+        for class_weight in ["", "balanced"]:
+          clf = svm.SVC(C=2**c, gamma=gamma, class_weight=class_weight,kernel=kernel)
+          clf.fit(X_train, y_train)
+          y_pred=clf.predict(X_test)
+          accuracy = metrics.accuracy_score(y_test, y_pred)
+          if accuracy > best_accuracy:
+            best_type = "SVM"
+            best_accuracy = accuracy
+            best_variables = variables
+            best_algorithm = kernel
+            best_c = c
+            best_gamma = gamma
+            best_weight = None
+            best_algorithm = kernel
+            best_criterion = None
+            best_min_samples_split = None
+            best_class_weight = None
+            best_clf = clf
+          print("SVM details " + str(c) + str(gamma) + kernel + str(class_weight) + " / Accuracy:", accuracy)
+        
 print("------------")
 print("Best Type:", best_type)
 print("Best Variables:", best_variables)
@@ -95,4 +125,8 @@ print("Best N:", best_n)
 print("Best Accuracy:", best_accuracy)
 print("Best Criterion:", best_criterion)
 print("Best Min Samples Split:", best_min_samples_split)
+print("Best Algorithm:", best_algorithm)
+print("Best C:", best_c)
+print("Best Gamma:", best_gamma)
+print("Best Criterion:", best_weight)
 dump(best_clf, str(best_accuracy) + "-" + best_type + "-" + str(best_n) + "-" + best_criterion + "-" + best_min_samples_split + ".joblib")
