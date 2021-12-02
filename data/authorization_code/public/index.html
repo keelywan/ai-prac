@@ -359,7 +359,17 @@
                             'Authorization': 'Bearer ' + access_token
                         },
                         success: function (response) {
-                            console.log(response['audio_features'][0]);
+                            const vals = response['audio_features'][0];
+                            /** TODO: turn into vector for classifier + preprocessing 
+                                Need to get acousticness, danceability, energy, instrumentalness, key
+                                loudness, mode, speechiness, tempo, time_signature, valence
+
+                                data = [acousticness, danceability, energy, instrumentalness, key
+                                    loudness, mode, speechiness, tempo, time_signature, valence]
+                                df = pd.DataFrame(data, columns=['acousticness', 'danceability', 'energy',
+                                    'instrumentalness', 'key', 'loudness', 'mode', 'speechiness', 'tempo', 
+                                    'time_signature', 'valence'])
+                            */
                         }
                     });
                 }
