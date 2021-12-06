@@ -1,4 +1,5 @@
 import pandas as pd 
+from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 
 df_data = pd.read_csv("../mood_data.csv", sep=',',header=None, encoding='unicode_escape', thousands=',')
@@ -21,6 +22,7 @@ variables = ['acousticness','danceability','energy','instrumentalness','loudness
 
 X = df_data[variables]
 Y = df_data['mood']
+
 variables = ['acousticness','danceability','energy','instrumentalness','loudness','speechiness','tempo','valence', 'time_signature', 'mode', 'key']
 powerset_groups = powerset(variables)
 
@@ -30,8 +32,11 @@ X = qt.transform(X)
 # scaler = preprocessing.StandardScaler().fit(X)
 # X = scaler.transform(X)
 
+
+xTr, xTe, yTr, yTe = train_test_split(X, Y, test_size=0.3)
+
 def get_data_opt_var():
-    return X,Y
+    return xTr, xTe, yTr, yTe
 
 def powerset_get_data():
     return map(lambda x: (x, df_data[x], Y), powerset_groups)
