@@ -63,6 +63,7 @@
             <input type="text" id="searchParams">
             <div id="searchResults"></div>
         </div>
+        <a href="/model" class="btn btn-primary">Python</a>
     </script>
 
     <script id="oauth-template" type="text/x-handlebars-template">
@@ -360,16 +361,26 @@
                         },
                         success: function (response) {
                             const vals = response['audio_features'][0];
-                            /** TODO: turn into vector for classifier + preprocessing 
-                                Need to get acousticness, danceability, energy, instrumentalness, key
-                                loudness, mode, speechiness, tempo, time_signature, valence
-
-                                data = [acousticness, danceability, energy, instrumentalness, key
-                                    loudness, mode, speechiness, tempo, time_signature, valence]
-                                df = pd.DataFrame(data, columns=['acousticness', 'danceability', 'energy',
-                                    'instrumentalness', 'key', 'loudness', 'mode', 'speechiness', 'tempo', 
-                                    'time_signature', 'valence'])
-                            */
+                            console.log(vals);
+                            $.ajax({
+                                url: '/model',
+                                data: {
+                                    acousticness: vals['acousticness'],
+                                    danceability: vals['danceability'],
+                                    energy: vals['energy'],
+                                    instrumentalness: vals['instrumentalness'],
+                                    key: vals['key'],
+                                    loudness: vals['loudness'],
+                                    mode: vals['mode'],
+                                    speechiness: vals['speechiness'],
+                                    tempo: vals['tempo'],
+                                    time_signature: vals['time_signature'],
+                                    valence: vals['valence']
+                                },
+                                success: function (response) {
+                                    console.log(response);
+                                }
+                            });
                         }
                     });
                 }
