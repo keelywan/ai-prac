@@ -143,5 +143,25 @@ app.get('/refresh_token', function (req, res) {
     });
 });
 
+// Sends audio featurers to model to get classification
+app.get('/model', (req, res) => {
+    console.log("make request");
+    const { spawn } = require("child_process");
+    const pyProg = spawn('python3', ['./model.py', req.query.acousticness,
+        req.query.danceability, req.query.energy, req.query.instrumentalness,
+        req.query.key, req.query.loudness, req.query.mode, req.query.speechiness,
+        req.query.tempo, req.query.time_signature, req.query.valence])
+
+    pyProg.stdout.on('data', (data) => {
+        console.log(data.toString());
+        res.send(data.toString());
+    });
+
+    pyProg.stderr.on('data', (data) => {
+        console.error(data)
+    });
+})
+
 console.log('Listening on 8888');
 app.listen(8888);
+

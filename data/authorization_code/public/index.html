@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Example of the Authorization Code flow with Spotify</title>
+    <title>Sound and Mood</title>
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
     <style type="text/css">
         #login,
@@ -16,16 +16,48 @@
             white-space: nowrap;
             width: 500px;
         }
+
+        .navbar {
+            border-radius: 0;
+        }
+
+        .navbar-text.navbar-right:last-child {
+            margin-right: 15px;
+        }
+
+        #searchResults {
+            max-height: 50vh;
+            overflow-y: scroll;
+        }
+
+        #searchResults>a {
+            display: flex;
+        }
+
+        #searchResults>a>div {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 1em;
+        }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <div id="login">
-            <h1>This is an example of the Authorization Code flow</h1>
+    <div id="login">
+        <nav class="navbar navbar-inverse">
+            <a class="navbar-brand" href="">Sound and Mood</a>
+        </nav>
+        <div class="container">
+            <h1>Welcome to Sound and Mood</h1>
+            <h2>How do audio features affect the mood of a song?</h2>
             <a href="/login" class="btn btn-primary">Log in with Spotify</a>
         </div>
-        <div id="loggedin">
+    </div>
+    <div id="loggedin">
+        <div id="user-navbar">
+        </div>
+        <div class="container">
             <div id="user-profile">
             </div>
             <div id="oauth">
@@ -33,6 +65,13 @@
             <button class="btn btn-default" id="obtain-new-token">Obtain new token using the refresh token</button>
         </div>
     </div>
+
+    <script id="user-navbar-template" type="text/x-handlebars-template">
+        <nav class="navbar navbar-inverse">
+            <a class="navbar-brand" href="">Sound and Mood</a>
+            <p class="navbar-text navbar-right">Signed in as <a href="{{external_urls.spotify}}" class="navbar-link" target="_blank">{{display_name}}</a></a></p>
+        </nav>
+    </script>
 
     <script id="user-profile-template" type="text/x-handlebars-template">
         <h1>Logged in as {{display_name}}</h1>
@@ -60,9 +99,17 @@
             </div>
         </div>
         <div class="test">
-            <input type="text" id="searchParams">
-            <div id="searchResults"></div>
+            <h3>Search a song from Spotify and get its mood!</h3>
+            <div class="input-group">
+                <span class="input-group-addon" id="basic-addon1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+                    </svg></span>
+                <input type="text" id="searchParams" class="form-control">
+            </div>
+            <div id="searchResults" class="list-group"></div>
         </div>
+        <a href="/model" class="btn btn-primary">Python</a>
     </script>
 
     <script id="oauth-template" type="text/x-handlebars-template">
@@ -267,6 +314,10 @@
                 return hashParams;
             }
 
+            var navbarSource = document.getElementById('user-navbar-template').innerHTML,
+                navbarTemplate = Handlebars.compile(navbarSource),
+                navbarPlaceholder = document.getElementById('user-navbar');
+
             var userProfileSource = document.getElementById('user-profile-template').innerHTML,
                 userProfileTemplate = Handlebars.compile(userProfileSource),
                 userProfilePlaceholder = document.getElementById('user-profile');
@@ -298,10 +349,11 @@
                         },
                         success: function (response) {
                             userProfilePlaceholder.innerHTML = userProfileTemplate(response);
+                            navbarPlaceholder.innerHTML = navbarTemplate(response);
                             $('#login').hide();
                             $('#loggedin').show();
                             document.getElementById('searchParams').addEventListener('input', function () {
-                                var ol = document.createElement("ol");
+                                var results = [];
                                 let searchValue = document.getElementById('searchParams').value;
                                 if (searchValue) {
                                     $.ajax({
@@ -318,21 +370,44 @@
                                         success: function (response) {
                                             response["tracks"]["items"].forEach((song, i) => {
                                                 console.log(song);
-                                                var li = document.createElement("li");
+                                                var resultItem = document.createElement("a");
+                                                resultItem.setAttribute('href', '#');
+                                                resultItem.classList.add('list-group-item');
+                                                resultItem.classList.add('list-group-item-action');
+
                                                 let allArtists = "";
                                                 song["artists"].forEach((artists, i) => {
                                                     if (i > 0) allArtists += ", ";
                                                     allArtists += artists["name"];
                                                 });
-                                                li.appendChild(document.createTextNode(song["name"] + " by " + allArtists + (song["explicit"] ? " E" : "")));
-                                                // li.setAttribute('data-id', song['id']);
-                                                li.addEventListener('click', function () {
+
+                                                var img = document.createElement("img");
+                                                img.src = song["album"]["images"][0].url;
+                                                img.style.height = "4em";
+                                                resultItem.appendChild(img);
+
+                                                var textDiv = document.createElement("div");
+                                                resultItem.appendChild(textDiv);
+
+                                                var songTitle = document.createElement("span");
+                                                songTitle.appendChild(document.createTextNode(song["name"] + (song["explicit"] ? " E" : "")))
+                                                textDiv.appendChild(songTitle);
+
+                                                var songArtist = document.createElement("span");
+                                                songArtist.classList.add("text-muted");
+                                                songArtist.appendChild(document.createTextNode(allArtists));
+                                                textDiv.appendChild(songArtist);
+
+                                                resultItem.addEventListener('click', function () {
                                                     getSongAudioFeatures(song['id']);
                                                 })
-                                                ol.appendChild(li);
+                                                results.push(resultItem);
                                             });
-                                            document.getElementById("searchResults").innerHTML = "";
-                                            document.getElementById("searchResults").appendChild(ol);
+                                            const searchResultsDiv = document.getElementById("searchResults");
+                                            searchResultsDiv.innerHTML = "";
+                                            results.forEach(el => {
+                                                searchResultsDiv.appendChild(el);
+                                            })
                                         }
                                     });
                                 } else {
@@ -360,16 +435,26 @@
                         },
                         success: function (response) {
                             const vals = response['audio_features'][0];
-                            /** TODO: turn into vector for classifier + preprocessing 
-                                Need to get acousticness, danceability, energy, instrumentalness, key
-                                loudness, mode, speechiness, tempo, time_signature, valence
-
-                                data = [acousticness, danceability, energy, instrumentalness, key
-                                    loudness, mode, speechiness, tempo, time_signature, valence]
-                                df = pd.DataFrame(data, columns=['acousticness', 'danceability', 'energy',
-                                    'instrumentalness', 'key', 'loudness', 'mode', 'speechiness', 'tempo', 
-                                    'time_signature', 'valence'])
-                            */
+                            console.log(vals);
+                            $.ajax({
+                                url: '/model',
+                                data: {
+                                    acousticness: vals['acousticness'],
+                                    danceability: vals['danceability'],
+                                    energy: vals['energy'],
+                                    instrumentalness: vals['instrumentalness'],
+                                    key: vals['key'],
+                                    loudness: vals['loudness'],
+                                    mode: vals['mode'],
+                                    speechiness: vals['speechiness'],
+                                    tempo: vals['tempo'],
+                                    time_signature: vals['time_signature'],
+                                    valence: vals['valence']
+                                },
+                                success: function (response) {
+                                    console.log(response);
+                                }
+                            });
                         }
                     });
                 }
