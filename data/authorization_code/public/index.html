@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Example of the Authorization Code flow with Spotify</title>
+    <title>Mood and Sound</title>
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
     <style type="text/css">
         #login,
@@ -16,13 +16,29 @@
             white-space: nowrap;
             width: 500px;
         }
+
+        #searchResults {
+            max-height: 50vh;
+            overflow-y: scroll;
+        }
+
+        #searchResults>a {
+            display: flex;
+        }
+
+        #searchResults>a>div {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 1em;
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
         <div id="login">
-            <h1>This is an example of the Authorization Code flow</h1>
+            <h1>Welcome to Mood and Sound</h1>
             <a href="/login" class="btn btn-primary">Log in with Spotify</a>
         </div>
         <div id="loggedin">
@@ -60,8 +76,8 @@
             </div>
         </div>
         <div class="test">
-            <input type="text" id="searchParams">
-            <div id="searchResults"></div>
+            <input type="text" id="searchParams" class="form-control">
+            <div id="searchResults" class="list-group"></div>
         </div>
         <a href="/model" class="btn btn-primary">Python</a>
     </script>
@@ -302,7 +318,7 @@
                             $('#login').hide();
                             $('#loggedin').show();
                             document.getElementById('searchParams').addEventListener('input', function () {
-                                var ol = document.createElement("ol");
+                                var results = [];
                                 let searchValue = document.getElementById('searchParams').value;
                                 if (searchValue) {
                                     $.ajax({
@@ -319,21 +335,44 @@
                                         success: function (response) {
                                             response["tracks"]["items"].forEach((song, i) => {
                                                 console.log(song);
-                                                var li = document.createElement("li");
+                                                var resultItem = document.createElement("a");
+                                                resultItem.setAttribute('href', '#');
+                                                resultItem.classList.add('list-group-item');
+                                                resultItem.classList.add('list-group-item-action');
+
                                                 let allArtists = "";
                                                 song["artists"].forEach((artists, i) => {
                                                     if (i > 0) allArtists += ", ";
                                                     allArtists += artists["name"];
                                                 });
-                                                li.appendChild(document.createTextNode(song["name"] + " by " + allArtists + (song["explicit"] ? " E" : "")));
-                                                // li.setAttribute('data-id', song['id']);
-                                                li.addEventListener('click', function () {
+
+                                                var img = document.createElement("img");
+                                                img.src = song["album"]["images"][0].url;
+                                                img.style.height = "4em";
+                                                resultItem.appendChild(img);
+
+                                                var textDiv = document.createElement("div");
+                                                resultItem.appendChild(textDiv);
+
+                                                var songTitle = document.createElement("span");
+                                                songTitle.appendChild(document.createTextNode(song["name"] + (song["explicit"] ? " E" : "")))
+                                                textDiv.appendChild(songTitle);
+
+                                                var songArtist = document.createElement("span");
+                                                songArtist.classList.add("text-muted");
+                                                songArtist.appendChild(document.createTextNode(allArtists));
+                                                textDiv.appendChild(songArtist);
+
+                                                resultItem.addEventListener('click', function () {
                                                     getSongAudioFeatures(song['id']);
                                                 })
-                                                ol.appendChild(li);
+                                                results.push(resultItem);
                                             });
-                                            document.getElementById("searchResults").innerHTML = "";
-                                            document.getElementById("searchResults").appendChild(ol);
+                                            const searchResultsDiv = document.getElementById("searchResults");
+                                            searchResultsDiv.innerHTML = "";
+                                            results.forEach(el => {
+                                                searchResultsDiv.appendChild(el);
+                                            })
                                         }
                                     });
                                 } else {
