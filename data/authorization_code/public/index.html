@@ -108,6 +108,7 @@
                 <input type="text" id="searchParams" class="form-control">
             </div>
             <div id="searchResults" class="list-group"></div>
+            <div id="classification" class="classification" style="font-size:20px;"></div>
         </div>
         <a href="/model" class="btn btn-primary">Python</a>
     </script>
@@ -352,6 +353,9 @@
                             navbarPlaceholder.innerHTML = navbarTemplate(response);
                             $('#login').hide();
                             $('#loggedin').show();
+                            document.getElementById('searchParams').addEventListener('click', function () {
+                                removeAllChildNodes(document.getElementById('classification'))
+                            })
                             document.getElementById('searchParams').addEventListener('input', function () {
                                 var results = [];
                                 let searchValue = document.getElementById('searchParams').value;
@@ -399,7 +403,7 @@
                                                 textDiv.appendChild(songArtist);
 
                                                 resultItem.addEventListener('click', function () {
-                                                    getSongAudioFeatures(song['id']);
+                                                    getSongAudioFeatures(song);
                                                 })
                                                 results.push(resultItem);
                                             });
@@ -423,11 +427,11 @@
                     $('#loggedin').hide();
                 }
 
-                function getSongAudioFeatures(id) {
+                function getSongAudioFeatures(song) {
                     $.ajax({
                         url: 'https://api.spotify.com/v1/audio-features',
                         data: {
-                            'ids': id,
+                            'ids': song['id'],
                         },
                         type: 'GET',
                         headers: {
@@ -452,6 +456,38 @@
                                     valence: vals['valence']
                                 },
                                 success: function (response) {
+                                    searchBar = document.getElementById('searchParams')
+                                    searchBar.value = ""
+                                    classification = document.getElementById('classification')
+
+                                    let allArtists = "";
+                                    song["artists"].forEach((artists, i) => {
+                                        if (i > 0) allArtists += ", ";
+                                        allArtists += artists["name"];
+                                    });
+
+                                    var img = document.createElement("img");
+                                    img.src = song["album"]["images"][0].url;
+                                    img.style.height = "4em";
+                                    classification.appendChild(img);
+
+                                    var textDiv = document.createElement("div");
+                                    classification.appendChild(textDiv);
+
+                                    var songTitle = document.createElement("span");
+                                    songTitle.classList.add("text-muted");
+                                    songTitle.appendChild(document.createTextNode(song["name"] + (song["explicit"] ? " E " : " ")))
+                                    textDiv.appendChild(songTitle);
+
+                                    var songArtist = document.createElement("span");
+                                    songArtist.classList.add("text-muted");
+                                    songArtist.appendChild(document.createTextNode(allArtists));
+                                    textDiv.appendChild(songArtist);
+                                    
+                                    var pred = document.createElement("span");
+                                    pred.appendChild(document.createTextNode(" Classification: " + response.substring(2, response.length - 3)))
+                                    textDiv.appendChild(pred);
+                                    removeAllChildNodes(document.getElementById("searchResults"))
                                     console.log(response);
                                 }
                             });
@@ -475,6 +511,12 @@
                 }, false);
             }
         })();
+
+        function removeAllChildNodes(parent) {
+            while (parent.firstChild) {
+                parent.removeChild(parent.firstChild);
+            }
+        }
     </script>
 </body>
 
