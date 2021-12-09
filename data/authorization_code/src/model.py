@@ -1,4 +1,5 @@
 import sys
+import data_process
 import pandas as pd
 from joblib import load
 
@@ -9,8 +10,7 @@ data = [[float(sys.argv[1]), float(sys.argv[2]), float(sys.argv[3]), float(sys.a
 df = pd.DataFrame(data, columns=['acousticness', 'danceability', 'energy',
         'instrumentalness', 'key', 'loudness', 'mode', 'speechiness', 'tempo', 
         'time_signature', 'valence'])
-
-# clf = load('./KNN-0.604-70-auto-distance.joblib')
-# print(clf.predict(df[0:1]))
-print("SUCCESS")
+song = data_process.transform_song(df[0:1])
+clf = load('./KNN-0.612-70-ball_tree-uniform.joblib')
+print(clf.predict(song))
 
