@@ -4,7 +4,13 @@
 <head>
     <title>Sound and Mood</title>
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
     <style type="text/css">
+        a,
+        a:hover {
+            color: #57b55f;
+        }
+
         #login,
         #loggedin {
             display: none;
@@ -17,6 +23,10 @@
             width: 500px;
         }
 
+        .introduction {
+            font-weight: 400;
+        }
+
         .navbar {
             border-radius: 0;
         }
@@ -25,13 +35,36 @@
             margin-right: 15px;
         }
 
+        .btn-primary {
+            background-color: #57b55f;
+            border-color: #46914c;
+        }
+
+        .btn-primary:hover,
+        .btn-primary:focus {
+            background-color: #46914c;
+            border-color: #38753d;
+        }
+
+        .main-content {
+            position: relative;
+        }
+
         #searchResults {
+            box-shadow: 5px 5px 8px #55555536;
             max-height: 50vh;
             overflow-y: scroll;
+            position: absolute;
+            width: 100%;
         }
 
         #searchResults>a {
             display: flex;
+        }
+
+        #searchResults>a:hover {
+            color: #555;
+            cursor: pointer;
         }
 
         #searchResults>a>div {
@@ -40,17 +73,219 @@
             justify-content: center;
             padding: 0 1em;
         }
+
+        .classification {
+            font-size: 20px;
+            margin: 25px 0;
+        }
+
+        #dataviz-graphs {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        #dataviz-graphs svg {
+            margin: 0 50px;
+        }
+
+        #dataviz-graphs .graph-label {
+            font-weight: 600;
+        }
+
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: none;
+        }
     </style>
+    <script src="https://d3js.org/d3.v4.js"></script>
 </head>
 
 <body>
+    <script>
+        // set the dimensions and margins of the graph
+        var margin = { top: 10, right: 20, bottom: 30, left: 50 },
+            svg_width = 250 - margin.left - margin.right,
+            svg_height = 300 - margin.top - margin.bottom;
+
+        function graphBoxPlot(svg, quantiles, x, y, width, val, category) {
+            // show the main vertical line
+            svg
+                .append("line")
+                .attr("x1", x(category))
+                .attr("x2", x(category))
+                .attr("y1", y(quantiles.min))
+                .attr("y2", y(quantiles.max))
+                .attr("stroke", "black");
+
+            // show the box
+            svg
+                .append("rect")
+                .attr("x", x(category) - width / 2)
+                .attr("y", y(quantiles.q3))
+                .attr("height", (y(quantiles.q1) - y(quantiles.q3)))
+                .attr("width", width)
+                .attr("stroke", "black")
+                .style("fill", "#57b55f");
+
+            // show median, min and max horizontal lines
+            svg
+                .selectAll("toto")
+                .data([quantiles.min, quantiles.median, quantiles.max])
+                .enter()
+                .append("line")
+                .attr("x1", x(category) - width / 2)
+                .attr("x2", x(category) + width / 2)
+                .attr("y1", function (d) { return (y(d)) })
+                .attr("y2", function (d) { return (y(d)) })
+                .attr("stroke", "black");
+
+            svg.append("circle")
+                .attr("cx", x(category))
+                .attr("cy", y(val))
+                .attr('r', '5px')
+                .style('fill', 'black');
+        }
+
+        function calculateQuantiles(data) {
+            var data_sorted = data.sort((a, b) => a - b);
+            var q1 = d3.quantile(data_sorted, .25);
+            var median = d3.quantile(data_sorted, .5);
+            var q3 = d3.quantile(data_sorted, .75);
+            var interQuantileRange = q3 - q1;
+            var min = q1 - 1.5 * interQuantileRange;
+            var max = q1 + 1.5 * interQuantileRange;
+            return {
+                min: min,
+                max: max,
+                median: median,
+                q1: q1,
+                q3: q3,
+                interQuantileRange: interQuantileRange
+            }
+        }
+
+        function graphBoxPlots(data, allData, svg, title, vals, axisLabel, mood) {
+            var quantiles = calculateQuantiles(allData);
+            var quantiles2 = calculateQuantiles(data);
+
+            var min = Math.min(quantiles.min, quantiles2.min);
+            var max = Math.max(quantiles.max, quantiles2.max);
+
+            // show the axes
+            var y = d3.scaleLinear()
+                .domain([min - quantiles.interQuantileRange, max + quantiles.interQuantileRange])
+                .range([svg_height, 0]);
+            svg.call(d3.axisLeft(y));
+
+            var x = d3.scaleBand()
+                .range([0, svg_width])
+                .domain(["All", mood])
+                .paddingInner(1)
+                .paddingOuter(.5)
+            svg.append("g")
+                .attr("transform", "translate(0," + svg_height + ")")
+                .attr('class', 'axis')
+                .call(d3.axisBottom(x))
+
+            // a few features for the box
+            var center = 90;
+            var width = 40;     // width of box plot
+
+            graphBoxPlot(svg, quantiles, x, y, width, vals[title], "All");
+            graphBoxPlot(svg, quantiles2, x, y, width, vals[title], mood);
+
+            // chart title 
+            svg
+                .append("text")
+                .attr("class", "graph-label")
+                .attr("x", center) //positions it at the middle of the width
+                .attr("y", margin.top) //positions it from the top by the margin top
+                .attr("font-family", "sans-serif")
+                .attr("font-size", "14px")
+                .attr("fill", "black")
+                .attr("text-anchor", "middle")
+                .text(title);
+
+            // axis label
+            svg.append("text")
+                .attr("class", "graph-label")
+                .attr("text-anchor", "middle")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (svg_height / 2))
+                .attr("dy", "1em")
+                .attr("font-family", "sans-serif")
+                .attr("fill", "black")
+                .attr("transform", "rotate(-90)")
+                .text(axisLabel);
+        }
+
+        function makeGraphs(vals, mood) {
+            d3.selectAll("#dataviz-graphs svg").remove();
+            d3.csv("./mood_data.csv", function (data) {
+                var variables = ["acousticness", "danceability", "energy", "instrumentalness", "loudness", "speechiness", "tempo", "valence"];
+                var axisLabels = {
+                    "acousticness": "confidence measure",
+                    "danceability": "",
+                    "energy": "",
+                    "instrumentalness": "",
+                    "loudness": "decibels (dB)",
+                    "speechiness": "",
+                    "tempo": "beats per minute (BPM)",
+                    "valence": ""
+                };
+                // only graphs the data that is classified as the given mood
+                data1 = data.filter(function (d) {
+                    if (d.mood == mood) return true;
+                    return false;
+                })
+                variables.forEach(function (v) {
+                    var selectedData = data1.map((function (d) { return d[v]; }));
+                    var allData = data.map((function (d) { return d[v]; }));
+                    var svg = d3.select("#dataviz-graphs")
+                        .append("svg")
+                        .attr("width", svg_width + margin.left + margin.right)
+                        .attr("height", svg_height + margin.top + margin.bottom)
+                        .append("g")
+                        .attr("transform",
+                            "translate(" + margin.left + "," + margin.top + ")");
+                    graphBoxPlots(selectedData, allData, svg, v, vals, axisLabels[v], mood);
+                })
+            })
+        }
+    </script>
     <div id="login">
         <nav class="navbar navbar-inverse">
             <a class="navbar-brand" href="">Sound and Mood</a>
         </nav>
         <div class="container">
             <h1>Welcome to Sound and Mood</h1>
-            <h2>How do audio features affect the mood of a song?</h2>
+            <h3 class="introduction">We're investigating how audio features affect the mood of a song.</h3>
+            <h3 class="introduction">Here's the list of audio features we utilized:</h3>
+            <span>
+                <ul>
+                    <li>Acousticness: A confidence measure from 0.0 to 1.0 of whether the track is acoustic where 1.0
+                        represents high confidence.</li>
+                    <li>Danceability: A measure from 0.0 to 1.0 of how suitable a track is for dancing where a
+                        value of 0.0 is least danceable and 1.0 is most danceable.</li>
+                    <li>Energy: A measure from 0.0 to 1.0 that represents a perceptual measure of intensity and
+                        activity.</li>
+                    <li>Instrumentalness: A measure from 0.0 to 1.0 that predicts whether a track contains no vocals.
+                    </li>
+                    <li>Loudness: Quality of a sound that is the primary psychological correlate of physical strength
+                        (amplitude) measured in decibels (dB).</li>
+                    <li>Speechiness: A measure from 0.0 to 1.0 that rerprresents the presence of spoken words in a track
+                        where 1.0 means more exclusively speech-like. </li>
+                    <li>Tempo: Speed or pace of a given piece measured in beats per minute (BPM).</li>
+                    <li>Valence: A measure from 0.0 to 1.0 describing the musical positiveness conveyed by a track where
+                        1.0 represents a more positive piece.</li>
+                </ul>
+            </span>
+            <h3 class="introduction">For more information, check out the <a
+                    href="https://developer.spotify.com/documentation/web-api/reference/#/operations/get-several-audio-features"
+                    target="_blank">Spotify Web API</a>.</h3>
+            <h2>Get Started Here!</h2>
             <a href="/login" class="btn btn-primary">Log in with Spotify</a>
         </div>
     </div>
@@ -60,10 +295,14 @@
         <div class="container">
             <div id="user-profile">
             </div>
-            <div id="oauth">
-            </div>
-            <button class="btn btn-default" id="obtain-new-token">Obtain new token using the refresh token</button>
+            <!-- <div id="oauth">
+            </div> -->
+            <!-- <button class="btn btn-default" id="obtain-new-token">Obtain new token using the refresh token</button> -->
         </div>
+    </div>
+    <div id="dataviz" class="container">
+        <h4 id="dataviz-header"></h4>
+        <div id="dataviz-graphs"></div>
     </div>
 
     <script id="user-navbar-template" type="text/x-handlebars-template">
@@ -74,7 +313,7 @@
     </script>
 
     <script id="user-profile-template" type="text/x-handlebars-template">
-        <h1>Logged in as {{display_name}}</h1>
+        <!-- <h1>Logged in as {{display_name}}</h1>
         <div class="media">
             <div class="pull-left">
                 <img class="media-object" width="150" src="{{images.0.url}}" />
@@ -97,23 +336,19 @@
                     <dd>{{country}}</dd>
                 </dl>
             </div>
+        </div> -->
+    <div class="main-content">
+        <h3>Search for a song from Spotify and get its mood!</h3>
+        <div class="input-group">
+            <span class="input-group-addon" id="basic-addon1"><i class="bi bi-search"></i></span>
+            <input type="text" id="searchParams" class="form-control">
         </div>
-        <div class="test">
-            <h3>Search a song from Spotify and get its mood!</h3>
-            <div class="input-group">
-                <span class="input-group-addon" id="basic-addon1">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
-                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
-                    </svg></span>
-                <input type="text" id="searchParams" class="form-control">
-            </div>
-            <div id="searchResults" class="list-group"></div>
-            <div id="classification" class="classification" style="font-size:20px;"></div>
-        </div>
-        <a href="/model" class="btn btn-primary">Python</a>
+        <div id="searchResults" class="list-group"></div>
+        <div id="classification" class="classification"></div>
+    </div>
     </script>
 
-    <script id="oauth-template" type="text/x-handlebars-template">
+    <!-- <script id="oauth-template" type="text/x-handlebars-template">
         <h2>oAuth info</h2>
         <dl class="dl-horizontal">
             <dt>Access token</dt>
@@ -121,7 +356,7 @@
             <dt>Refresh token</dt>
             <dd class="text-overflow">{{refresh_token}}</dd>
         </dl>
-    </script>
+    </script> -->
 
     <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script>
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
@@ -323,9 +558,9 @@
                 userProfileTemplate = Handlebars.compile(userProfileSource),
                 userProfilePlaceholder = document.getElementById('user-profile');
 
-            var oauthSource = document.getElementById('oauth-template').innerHTML,
-                oauthTemplate = Handlebars.compile(oauthSource),
-                oauthPlaceholder = document.getElementById('oauth');
+            // var oauthSource = document.getElementById('oauth-template').innerHTML,
+            //     oauthTemplate = Handlebars.compile(oauthSource),
+            //     oauthPlaceholder = document.getElementById('oauth');
 
             var params = getHashParams();
 
@@ -338,10 +573,10 @@
             } else {
                 if (access_token) {
                     // render oauth info
-                    oauthPlaceholder.innerHTML = oauthTemplate({
-                        access_token: access_token,
-                        refresh_token: refresh_token
-                    });
+                    // oauthPlaceholder.innerHTML = oauthTemplate({
+                    //     access_token: access_token,
+                    //     refresh_token: refresh_token
+                    // });
 
                     $.ajax({
                         url: 'https://api.spotify.com/v1/me',
@@ -353,70 +588,12 @@
                             navbarPlaceholder.innerHTML = navbarTemplate(response);
                             $('#login').hide();
                             $('#loggedin').show();
-                            document.getElementById('searchParams').addEventListener('click', function () {
-                                removeAllChildNodes(document.getElementById('classification'))
-                            })
+                            // document.getElementById('searchParams').addEventListener('click', function () {
+                            //     removeAllChildNodes(document.getElementById('classification'))
+                            // })
+
                             document.getElementById('searchParams').addEventListener('input', function () {
-                                var results = [];
-                                let searchValue = document.getElementById('searchParams').value;
-                                if (searchValue) {
-                                    $.ajax({
-                                        url: 'https://api.spotify.com/v1/search',
-                                        data: {
-                                            'q': searchValue,
-                                            'type': 'track',
-                                            'limit': '10'
-                                        },
-                                        type: 'GET',
-                                        headers: {
-                                            'Authorization': 'Bearer ' + access_token
-                                        },
-                                        success: function (response) {
-                                            response["tracks"]["items"].forEach((song, i) => {
-                                                console.log(song);
-                                                var resultItem = document.createElement("a");
-                                                resultItem.setAttribute('href', '#');
-                                                resultItem.classList.add('list-group-item');
-                                                resultItem.classList.add('list-group-item-action');
-
-                                                let allArtists = "";
-                                                song["artists"].forEach((artists, i) => {
-                                                    if (i > 0) allArtists += ", ";
-                                                    allArtists += artists["name"];
-                                                });
-
-                                                var img = document.createElement("img");
-                                                img.src = song["album"]["images"][0].url;
-                                                img.style.height = "4em";
-                                                resultItem.appendChild(img);
-
-                                                var textDiv = document.createElement("div");
-                                                resultItem.appendChild(textDiv);
-
-                                                var songTitle = document.createElement("span");
-                                                songTitle.appendChild(document.createTextNode(song["name"] + (song["explicit"] ? " E" : "")))
-                                                textDiv.appendChild(songTitle);
-
-                                                var songArtist = document.createElement("span");
-                                                songArtist.classList.add("text-muted");
-                                                songArtist.appendChild(document.createTextNode(allArtists));
-                                                textDiv.appendChild(songArtist);
-
-                                                resultItem.addEventListener('click', function () {
-                                                    getSongAudioFeatures(song);
-                                                })
-                                                results.push(resultItem);
-                                            });
-                                            const searchResultsDiv = document.getElementById("searchResults");
-                                            searchResultsDiv.innerHTML = "";
-                                            results.forEach(el => {
-                                                searchResultsDiv.appendChild(el);
-                                            })
-                                        }
-                                    });
-                                } else {
-                                    document.getElementById("searchResults").innerHTML = "";
-                                }
+                                search();
                             });
                         }
                     });
@@ -427,7 +604,73 @@
                     $('#loggedin').hide();
                 }
 
+                function search() {
+                    var results = [];
+                    let searchValue = document.getElementById('searchParams').value;
+                    if (searchValue) {
+                        $.ajax({
+                            url: 'https://api.spotify.com/v1/search',
+                            data: {
+                                'q': searchValue,
+                                'type': 'track',
+                                'limit': '10'
+                            },
+                            type: 'GET',
+                            headers: {
+                                'Authorization': 'Bearer ' + access_token
+                            },
+                            success: function (response) {
+                                response["tracks"]["items"].forEach((song, i) => {
+                                    console.log(song);
+                                    var resultItem = document.createElement("a");
+                                    resultItem.classList.add('list-group-item');
+                                    resultItem.classList.add('list-group-item-action');
+
+                                    let allArtists = "";
+                                    song["artists"].forEach((artists, i) => {
+                                        if (i > 0) allArtists += ", ";
+                                        allArtists += artists["name"];
+                                    });
+
+                                    var img = document.createElement("img");
+                                    img.src = song["album"]["images"][0].url;
+                                    img.style.height = "4em";
+                                    resultItem.appendChild(img);
+
+                                    var textDiv = document.createElement("div");
+                                    resultItem.appendChild(textDiv);
+
+                                    var songTitle = document.createElement("span");
+                                    songTitle.appendChild(document.createTextNode(song["name"] + (song["explicit"] ? " E" : "")))
+                                    textDiv.appendChild(songTitle);
+
+                                    var songArtist = document.createElement("span");
+                                    songArtist.classList.add("text-muted");
+                                    songArtist.appendChild(document.createTextNode(allArtists));
+                                    textDiv.appendChild(songArtist);
+
+                                    resultItem.addEventListener('click', function () {
+                                        getSongAudioFeatures(song);
+                                    })
+                                    results.push(resultItem);
+                                });
+                                const searchResultsDiv = document.getElementById("searchResults");
+                                searchResultsDiv.innerHTML = "";
+                                results.forEach(el => {
+                                    searchResultsDiv.appendChild(el);
+                                })
+                            }
+                        });
+                    } else {
+                        document.getElementById("searchResults").innerHTML = "";
+                    }
+                }
+
                 function getSongAudioFeatures(song) {
+                    removeAllChildNodes(document.getElementById("searchResults"));
+                    removeAllChildNodes(document.getElementById('classification'));
+                    searchBar = document.getElementById('searchParams');
+                    searchBar.readOnly = true;
                     $.ajax({
                         url: 'https://api.spotify.com/v1/audio-features',
                         data: {
@@ -456,9 +699,9 @@
                                     valence: vals['valence']
                                 },
                                 success: function (response) {
-                                    searchBar = document.getElementById('searchParams')
+                                    searchBar.readOnly = false;
                                     searchBar.value = ""
-                                    classification = document.getElementById('classification')
+                                    classification = document.getElementById('classification');
 
                                     let allArtists = "";
                                     song["artists"].forEach((artists, i) => {
@@ -476,39 +719,43 @@
 
                                     var songTitle = document.createElement("span");
                                     songTitle.classList.add("text-muted");
-                                    songTitle.appendChild(document.createTextNode(song["name"] + (song["explicit"] ? " E " : " ")))
+                                    songTitle.appendChild(document.createTextNode(song["name"] + (song["explicit"] ? " E " : " ")));
                                     textDiv.appendChild(songTitle);
 
                                     var songArtist = document.createElement("span");
                                     songArtist.classList.add("text-muted");
                                     songArtist.appendChild(document.createTextNode(allArtists));
                                     textDiv.appendChild(songArtist);
-                                    
+
                                     var pred = document.createElement("span");
-                                    pred.appendChild(document.createTextNode(" Classification: " + response.substring(2, response.length - 3)))
+                                    pred.appendChild(document.createTextNode(' Classification: ' + response.substring(2, response.length - 3)))
                                     textDiv.appendChild(pred);
-                                    removeAllChildNodes(document.getElementById("searchResults"))
                                     console.log(response);
+
+                                    const mood = response.substring(2, response.length - 3);
+                                    var headerDesc = document.getElementById("dataviz-header");
+                                    headerDesc.innerHTML = "See how " + song["name"] + " compares to the songs in our training data. The boxplot on the left is for all the songs, while the boxplot on the right consists only of songs that were classified as " + mood + ".";
+                                    makeGraphs(vals, mood);
                                 }
                             });
                         }
                     });
                 }
 
-                document.getElementById('obtain-new-token').addEventListener('click', function () {
-                    $.ajax({
-                        url: '/refresh_token',
-                        data: {
-                            'refresh_token': refresh_token
-                        }
-                    }).done(function (data) {
-                        access_token = data.access_token;
-                        oauthPlaceholder.innerHTML = oauthTemplate({
-                            access_token: access_token,
-                            refresh_token: refresh_token
-                        });
-                    });
-                }, false);
+                // document.getElementById('obtain-new-token').addEventListener('click', function () {
+                //     $.ajax({
+                //         url: '/refresh_token',
+                //         data: {
+                //             'refresh_token': refresh_token
+                //         }
+                //     }).done(function (data) {
+                //         access_token = data.access_token;
+                //         oauthPlaceholder.innerHTML = oauthTemplate({
+                //             access_token: access_token,
+                //             refresh_token: refresh_token
+                //         });
+                //     });
+                // }, false);
             }
         })();
 
