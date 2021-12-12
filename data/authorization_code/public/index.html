@@ -842,7 +842,7 @@
 
                                     const mood = response.substring(2, response.length - 3);
                                     var headerDesc = document.getElementById("dataviz-header");
-                                    headerDesc.innerHTML = "See how <b>" + song["name"] + "</b> compares to the songs in our training data. The boxplot on the left is for all the songs, while the boxplot on the right consists only of songs that were classified as <b>" + mood + "</b>. The black circle indicates the value assigned to each audio feature of <b>" + song["name"] + "</b>. Hover over each feature to get more details.";
+                                    headerDesc.innerHTML = "See how <b>" + song["name"] + "</b> compares to the songs in our training and test data. The boxplot on the left is for all the songs, while the boxplot on the right consists only of songs that were classified as <b>" + mood + "</b>. The black circle indicates the value assigned to each audio feature of <b>" + song["name"] + "</b>. Hover over each feature to get more details.";
                                     makeGraphs(vals, mood);
                                 }
                             });
