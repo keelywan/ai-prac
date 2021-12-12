@@ -178,11 +178,22 @@
         .feature-value {
             color: #57b55f;
         }
+
+        img.loader {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            margin-left: auto;
+            margin-right: auto;
+        }
     </style>
     <script src="https://d3js.org/d3.v4.js"></script>
 </head>
 
 <body>
+    <img src="loading.svg" class="loader" id="loader">
     <script>
         // set the dimensions and margins of the graph
         var margin = { top: 10, right: 20, bottom: 30, left: 50 },
@@ -300,7 +311,7 @@
 
         function makeGraphs(vals, mood) {
             // TODO: CHECK TO MAKE SURE THIS WORKS
-            // removeAllChildNodes(document.getElementById("dataviz-graphs"));
+            removeAllChildNodes(document.getElementById("dataviz-graphs"));
             d3.csv("./mood_data.csv", function (data) {
                 var variables = ["acousticness", "danceability", "energy", "instrumentalness", "loudness", "speechiness", "tempo", "valence"];
                 var axisLabels = {
@@ -759,9 +770,10 @@
 
                 function getSongAudioFeatures(song) {
                     removeAllChildNodes(document.getElementById("searchResults"));
-                    removeAllChildNodes(document.getElementById('classification'));
                     searchBar = document.getElementById('searchParams');
                     searchBar.readOnly = true;
+                    var loader = document.getElementById("loader");
+                    loader.style.display = "block";
                     $.ajax({
                         url: 'https://api.spotify.com/v1/audio-features',
                         data: {
@@ -790,9 +802,11 @@
                                     valence: vals['valence']
                                 },
                                 success: function (response) {
+                                    loader.style.display = "none";
                                     searchBar.readOnly = false;
                                     searchBar.value = ""
                                     classification = document.getElementById('classification');
+                                    removeAllChildNodes(classification);
 
                                     let allArtists = "";
                                     song["artists"].forEach((artists, i) => {
@@ -828,7 +842,7 @@
 
                                     const mood = response.substring(2, response.length - 3);
                                     var headerDesc = document.getElementById("dataviz-header");
-                                    headerDesc.innerHTML = "See how " + song["name"] + " compares to the songs in our training data. The boxplot on the left is for all the songs, while the boxplot on the right consists only of songs that were classified as " + mood + ". The black circle indicates the value assigned to each audio feature of " + song["name"] + ". Hover over each feature to get more details.";
+                                    headerDesc.innerHTML = "See how <b>" + song["name"] + "</b> compares to the songs in our training data. The boxplot on the left is for all the songs, while the boxplot on the right consists only of songs that were classified as <b>" + mood + "</b>. The black circle indicates the value assigned to each audio feature of <b>" + song["name"] + "</b>. Hover over each feature to get more details.";
                                     makeGraphs(vals, mood);
                                 }
                             });
