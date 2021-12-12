@@ -3,6 +3,21 @@
 
 <head>
     <title>Sound and Mood</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+        crossorigin="anonymous"></script>
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip({
+                container: 'body'
+            });
+        })
+        document.onload = function () {
+            $('[data-toggle="tooltip"]').tooltip();
+        }
+
+    </script>
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
     <style type="text/css">
@@ -56,10 +71,12 @@
             overflow-y: scroll;
             position: absolute;
             width: 100%;
+            z-index: 2;
         }
 
         #searchResults>a {
             display: flex;
+            flex-wrap: wrap;
         }
 
         #searchResults>a:hover {
@@ -70,13 +87,29 @@
         #searchResults>a>div {
             display: flex;
             flex-direction: column;
+            flex-wrap: wrap;
             justify-content: center;
             padding: 0 1em;
         }
 
         .classification {
+            display: flex;
+            flex-direction: column;
+            flex-wrap: wrap;
             font-size: 20px;
             margin: 25px 0;
+        }
+
+        .classification>div {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .classification>div>div {
+            display: flex;
+            flex-direction: column;
+            flex-wrap: wrap;
+            padding: 0 1em;
         }
 
         #dataviz-graphs {
@@ -89,6 +122,13 @@
             margin: 0 50px;
         }
 
+        #dataviz-graphs>div {
+            display: flex;
+            flex-direction: column;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
         #dataviz-graphs .graph-label {
             font-weight: 600;
         }
@@ -97,6 +137,46 @@
         .axis line {
             fill: none;
             stroke: none;
+        }
+
+        /* Tooltip container */
+        .custom-tooltip {
+            color: #57b55f;
+            font-weight: 600;
+            position: relative;
+            display: inline-block;
+            border-bottom: 1px dotted black;
+            margin-left: 30px;
+        }
+
+        .custom-tooltip:hover {
+            cursor: pointer;
+        }
+
+        /* Tooltip text */
+        .custom-tooltip .custom-tooltiptext {
+            visibility: hidden;
+            width: 250px;
+            background-color: black;
+            color: #fff;
+            padding: 10px;
+            border-radius: 6px;
+            margin-left: 10px;
+            margin-top: -10px;
+            font-weight: 400;
+
+            /* Position the tooltip text - see examples below! */
+            position: absolute;
+            z-index: 1;
+        }
+
+        /* Show the tooltip text when you mouse over the tooltip container */
+        .custom-tooltip:hover .custom-tooltiptext {
+            visibility: visible;
+        }
+
+        .feature-value {
+            color: #57b55f;
         }
     </style>
     <script src="https://d3js.org/d3.v4.js"></script>
@@ -108,6 +188,17 @@
         var margin = { top: 10, right: 20, bottom: 30, left: 50 },
             svg_width = 250 - margin.left - margin.right,
             svg_height = 300 - margin.top - margin.bottom;
+
+        var featureDescriptions = {
+            "acousticness": "A confidence measure from 0.0 to 1.0 of whether the track is acoustic where 1.0 represents high confidence.",
+            "danceability": "A measure from 0.0 to 1.0 of how suitable a track is for dancing where a value of 0.0 is least danceable and 1.0 is most danceable.",
+            "energy": "A measure from 0.0 to 1.0 that represents a perceptual measure of intensity and activity.",
+            "instrumentalness": "A measure from 0.0 to 1.0 that predicts whether a track contains no vocals.",
+            "loudness": "Quality of a sound that is the primary psychological correlate of physical strength (amplitude) measured in decibels (dB).",
+            "speechiness": "A measure from 0.0 to 1.0 that rerprresents the presence of spoken words in a track where 1.0 means more exclusively speech-like.",
+            "tempo": "Speed or pace of a given piece measured in beats per minute (BPM).",
+            "valence": "A measure from 0.0 to 1.0 describing the musical positiveness conveyed by a track where 1.0 represents a more positive piece."
+        };
 
         function graphBoxPlot(svg, quantiles, x, y, width, val, category) {
             // show the main vertical line
@@ -189,24 +280,10 @@
                 .attr('class', 'axis')
                 .call(d3.axisBottom(x))
 
-            // a few features for the box
-            var center = 90;
             var width = 40;     // width of box plot
 
             graphBoxPlot(svg, quantiles, x, y, width, vals[title], "All");
             graphBoxPlot(svg, quantiles2, x, y, width, vals[title], mood);
-
-            // chart title 
-            svg
-                .append("text")
-                .attr("class", "graph-label")
-                .attr("x", center) //positions it at the middle of the width
-                .attr("y", margin.top) //positions it from the top by the margin top
-                .attr("font-family", "sans-serif")
-                .attr("font-size", "14px")
-                .attr("fill", "black")
-                .attr("text-anchor", "middle")
-                .text(title);
 
             // axis label
             svg.append("text")
@@ -222,11 +299,12 @@
         }
 
         function makeGraphs(vals, mood) {
-            d3.selectAll("#dataviz-graphs svg").remove();
+            // TODO: CHECK TO MAKE SURE THIS WORKS
+            // removeAllChildNodes(document.getElementById("dataviz-graphs"));
             d3.csv("./mood_data.csv", function (data) {
                 var variables = ["acousticness", "danceability", "energy", "instrumentalness", "loudness", "speechiness", "tempo", "valence"];
                 var axisLabels = {
-                    "acousticness": "confidence measure",
+                    "acousticness": "",
                     "danceability": "",
                     "energy": "",
                     "instrumentalness": "",
@@ -243,7 +321,21 @@
                 variables.forEach(function (v) {
                     var selectedData = data1.map((function (d) { return d[v]; }));
                     var allData = data.map((function (d) { return d[v]; }));
-                    var svg = d3.select("#dataviz-graphs")
+                    var graphs = document.getElementById("dataviz-graphs");
+                    var svgContainer = document.createElement("div");
+                    svgContainer.id = "graph-" + v;
+                    graphs.appendChild(svgContainer);
+
+                    var tooltip = document.createElement("div");
+                    tooltip.setAttribute("class", "custom-tooltip");
+                    tooltip.innerHTML = v;
+                    var tooltipText = document.createElement("span");
+                    tooltipText.setAttribute("class", "custom-tooltiptext");
+                    tooltipText.innerHTML = featureDescriptions[v] + " The " + v + " for this song is <b class='feature-value'>" + vals[v] + "</b>.";
+                    tooltip.appendChild(tooltipText);
+                    svgContainer.appendChild(tooltip);
+
+                    var svg = d3.select("#graph-" + v)
                         .append("svg")
                         .attr("width", svg_width + margin.left + margin.right)
                         .attr("height", svg_height + margin.top + margin.bottom)
@@ -359,7 +451,6 @@
     </script> -->
 
     <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script>
-    <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
     <script>
         // START: TODO
         function createCsv(data) {
@@ -641,7 +732,7 @@
                                     resultItem.appendChild(textDiv);
 
                                     var songTitle = document.createElement("span");
-                                    songTitle.appendChild(document.createTextNode(song["name"] + (song["explicit"] ? " E" : "")))
+                                    songTitle.innerHTML = song["name"] + "<b>" + (song["explicit"] ? " E" : "") + "</b>";
                                     textDiv.appendChild(songTitle);
 
                                     var songArtist = document.createElement("span");
@@ -709,17 +800,25 @@
                                         allArtists += artists["name"];
                                     });
 
+                                    var songDiv = document.createElement("div");
+                                    classification.appendChild(songDiv);
+
                                     var img = document.createElement("img");
                                     img.src = song["album"]["images"][0].url;
-                                    img.style.height = "4em";
-                                    classification.appendChild(img);
+                                    img.style.height = "6em";
+                                    songDiv.appendChild(img);
 
                                     var textDiv = document.createElement("div");
-                                    classification.appendChild(textDiv);
+                                    songDiv.appendChild(textDiv);
+
+                                    var pred = document.createElement("p");
+                                    pred.appendChild(document.createTextNode(' Classification: ' + response.substring(2, response.length - 3)));
+                                    pred.style.fontWeight = "bold";
+                                    textDiv.appendChild(pred);
+                                    console.log(response);
 
                                     var songTitle = document.createElement("span");
-                                    songTitle.classList.add("text-muted");
-                                    songTitle.appendChild(document.createTextNode(song["name"] + (song["explicit"] ? " E " : " ")));
+                                    songTitle.innerHTML = song["name"] + "<b>" + (song["explicit"] ? " E " : " ") + "</b>";
                                     textDiv.appendChild(songTitle);
 
                                     var songArtist = document.createElement("span");
@@ -727,14 +826,9 @@
                                     songArtist.appendChild(document.createTextNode(allArtists));
                                     textDiv.appendChild(songArtist);
 
-                                    var pred = document.createElement("span");
-                                    pred.appendChild(document.createTextNode(' Classification: ' + response.substring(2, response.length - 3)))
-                                    textDiv.appendChild(pred);
-                                    console.log(response);
-
                                     const mood = response.substring(2, response.length - 3);
                                     var headerDesc = document.getElementById("dataviz-header");
-                                    headerDesc.innerHTML = "See how " + song["name"] + " compares to the songs in our training data. The boxplot on the left is for all the songs, while the boxplot on the right consists only of songs that were classified as " + mood + ".";
+                                    headerDesc.innerHTML = "See how " + song["name"] + " compares to the songs in our training data. The boxplot on the left is for all the songs, while the boxplot on the right consists only of songs that were classified as " + mood + ". The black circle indicates the value assigned to each audio feature of " + song["name"] + ". Hover over each feature to get more details.";
                                     makeGraphs(vals, mood);
                                 }
                             });
