@@ -205,9 +205,12 @@
             "danceability": "A measure from 0.0 to 1.0 of how suitable a track is for dancing where a value of 0.0 is least danceable and 1.0 is most danceable.",
             "energy": "A measure from 0.0 to 1.0 that represents a perceptual measure of intensity and activity.",
             "instrumentalness": "A measure from 0.0 to 1.0 that predicts whether a track contains no vocals.",
+            "key": "The key the track is in with integers mapping to pitches using standard Pitch Class notation. Ranges between -1 and 11 where -1 means no key was detected.",
             "loudness": "Quality of a sound that is the primary psychological correlate of physical strength (amplitude) measured in decibels (dB).",
+            "mode": "Major or minor of the track where 1 represents major and 0 represents minor.",
             "speechiness": "A measure from 0.0 to 1.0 that rerprresents the presence of spoken words in a track where 1.0 means more exclusively speech-like.",
             "tempo": "Speed or pace of a given piece measured in beats per minute (BPM).",
+            "time_signature": "Estimated time signature which specifies how many beats are in each bar (or measure). The time signature ranges from 3 to 7 indicating time signatures of \"3/4\", to \"7/\".",
             "valence": "A measure from 0.0 to 1.0 describing the musical positiveness conveyed by a track where 1.0 represents a more positive piece."
         };
 
@@ -313,15 +316,18 @@
             // TODO: CHECK TO MAKE SURE THIS WORKS
             removeAllChildNodes(document.getElementById("dataviz-graphs"));
             d3.csv("./mood_data.csv", function (data) {
-                var variables = ["acousticness", "danceability", "energy", "instrumentalness", "loudness", "speechiness", "tempo", "valence"];
+                var variables = ["acousticness", "danceability", "energy", "instrumentalness", "key", "loudness", "mode", "speechiness", "tempo", "time_signature", "valence"];
                 var axisLabels = {
                     "acousticness": "",
                     "danceability": "",
                     "energy": "",
                     "instrumentalness": "",
+                    "key": "",
                     "loudness": "decibels (dB)",
+                    "mode": "",
                     "speechiness": "",
                     "tempo": "beats per minute (BPM)",
+                    "time_signature": "beats in each bar",
                     "valence": ""
                 };
                 // only graphs the data that is classified as the given mood
@@ -368,21 +374,28 @@
             <h3 class="introduction">Here's the list of audio features we utilized:</h3>
             <span>
                 <ul>
-                    <li>Acousticness: A confidence measure from 0.0 to 1.0 of whether the track is acoustic where 1.0
-                        represents high confidence.</li>
-                    <li>Danceability: A measure from 0.0 to 1.0 of how suitable a track is for dancing where a
+                    <li><i>Acousticness</i>: A confidence measure from 0.0 to 1.0 of whether the track is acoustic where
+                        1.0 represents high confidence.</li>
+                    <li><i>Danceability</i>: A measure from 0.0 to 1.0 of how suitable a track is for dancing where a
                         value of 0.0 is least danceable and 1.0 is most danceable.</li>
-                    <li>Energy: A measure from 0.0 to 1.0 that represents a perceptual measure of intensity and
+                    <li><i>Energy</i>: A measure from 0.0 to 1.0 that represents a perceptual measure of intensity and
                         activity.</li>
-                    <li>Instrumentalness: A measure from 0.0 to 1.0 that predicts whether a track contains no vocals.
-                    </li>
-                    <li>Loudness: Quality of a sound that is the primary psychological correlate of physical strength
+                    <li><i>Instrumentalness</i>: A measure from 0.0 to 1.0 that predicts whether a track contains no
+                        vocals. </li>
+                    <li><i>Key</i>: The key the track is in with integers mapping to pitches using standard Pitch Class
+                        notation. Ranges between -1 and 11 where -1 means no key was detected.</li>
+                    <li><i>Loudness</i>: Quality of a sound that is the primary psychological correlate of physical
+                        strength
                         (amplitude) measured in decibels (dB).</li>
-                    <li>Speechiness: A measure from 0.0 to 1.0 that rerprresents the presence of spoken words in a track
-                        where 1.0 means more exclusively speech-like. </li>
-                    <li>Tempo: Speed or pace of a given piece measured in beats per minute (BPM).</li>
-                    <li>Valence: A measure from 0.0 to 1.0 describing the musical positiveness conveyed by a track where
-                        1.0 represents a more positive piece.</li>
+                    <li><i>Mode</i>: Major or minor of the track where 1 represents major and 0 represents minor.</li>
+                    <li><i>Speechiness</i>: A measure from 0.0 to 1.0 that rerprresents the presence of spoken words in
+                        a track where 1.0 means more exclusively speech-like. </li>
+                    <li><i>Tempo</i>: Speed or pace of a given piece measured in beats per minute (BPM).</li>
+                    <li><i>Time Signature</i>: Estimated time signature which specifies how many beats are in each bar
+                        (or measure). The time signature ranges from 3 to 7 indicating time signatures of "3/4", to
+                        "7/4".</li>
+                    <li><i>Valence</i>: A measure from 0.0 to 1.0 describing the musical positiveness conveyed by a
+                        track where 1.0 represents a more positive piece.</li>
                 </ul>
             </span>
             <h3 class="introduction">For more information, check out the <a
