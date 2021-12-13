@@ -147,10 +147,13 @@ app.get('/refresh_token', function (req, res) {
 app.get('/model', (req, res) => {
     console.log("make request");
     const { spawn } = require("child_process");
+    console.log(req.query)
     const pyProg = spawn('python3', ['./src/model.py', req.query.acousticness,
-        req.query.danceability, req.query.energy, req.query.instrumentalness,
-        req.query.key, req.query.loudness, req.query.mode, req.query.speechiness,
-        req.query.tempo, req.query.time_signature, req.query.valence])
+        req.query.danceability, req.query.duration_ms, req.query.energy, req.query.instrumentalness,
+        req.query.key, req.query.loudness, req.query.loudness, req.query.speechiness,
+        req.query.tempo, req.query.valence, req.query.key_confidence,
+        req.query.mode_confidence, req.query.tempo_confidence, req.query.time_signature_confidence,
+        req.query.end_of_fade_in, req.query.start_of_fade_out])
     pyProg.stdout.setEncoding('utf8');
     pyProg.stdout.on('data', (data) => {
         console.log(data.toString());

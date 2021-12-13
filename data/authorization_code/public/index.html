@@ -814,10 +814,8 @@
                             "key",
                             "liveness",
                             "loudness",
-                            "mode",
                             "speechiness",
                             "tempo",
-                            "time_signature",
                             "valence",
                         ],
                         "analysis": [
@@ -849,6 +847,7 @@
                             columns.features.forEach(col => {
                                 compiledData[col] = features[col];
                             })
+                            console.log(compiledData)
                             $.ajax({
                                 url: 'https://api.spotify.com/v1/audio-analysis/' + song['id'],
                                 headers: {
@@ -859,6 +858,7 @@
                                     columns.analysis.forEach(col => {
                                         compiledData[col] = analysis[col];
                                     });
+                                    console.log(compiledData)
                                     $.ajax({
                                         url: '/model',
                                         data: compiledData,
